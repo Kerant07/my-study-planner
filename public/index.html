@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>我的学习助手</title>
+  <style>
+    :root {
+      --ink: #1f2a24;
+      --muted: #5c6b63;
+      --paper: #f4efe4;
+      --card: #fffdf8;
+      --line: #d8cfc0;
+      --accent: #2f6f5e;
+      --accent-dark: #245748;
+      --warn: #b85c38;
+      --done: #6d7c74;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top left, #efe6d4 0%, transparent 42%),
+        var(--paper);
+      color: var(--ink);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      padding: 22px 28px 10px;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+    }
+
+    header p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 1fr 1.15fr 1fr;
+      gap: 16px;
+      padding: 12px 28px 20px;
+      align-items: stretch;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+      box-shadow: 0 8px 24px rgba(70, 55, 30, 0.06);
+    }
+
+    .panel h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    textarea, input[type="text"], input[type="date"], select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--ink);
+      background: #fffcf7;
+      outline: none;
+    }
+
+    textarea {
+      min-height: 240px;
+      resize: vertical;
+      line-height: 1.6;
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 14px;
+      background: var(--accent);
+      color: #fff;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    button:hover { background: var(--accent-dark); }
+    button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .goal-actions {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .todo-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      overflow: auto;
+      flex: 1;
+    }
+
+    .todo-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--line);
+    }
+
+    .todo-item.done .todo-title {
+      color: var(--done);
+      text-decoration: line-through;
+    }
+
+    .todo-title {
+      font-weight: 600;
+      line-height: 1.4;
+    }
+
+    .todo-due {
+      color: var(--muted);
+      font-size: 12px;
+      margin-top: 4px;
+    }
+
+    .empty {
+      color: var(--muted);
+      padding: 18px 0;
+    }
+
+    .day-tabs {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .day-tab {
+      padding: 6px 2px;
+      background: #f7f3ea;
+      color: var(--ink);
+      font-size: 12px;
+      line-height: 1.35;
+    }
+
+    .day-tab:hover { background: #efe6d4; }
+    .day-tab.active,
+    .day-tab.active:hover {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .day-tab small {
+      display: block;
+      font-size: 10px;
+      font-weight: 400;
+      opacity: 0.85;
+    }
+
+    .btn-edit {
+      padding: 4px 8px;
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--line);
+      font-size: 12px;
+    }
+
+    .btn-edit:hover {
+      background: #e7f3ee;
+      color: var(--accent-dark);
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 42, 36, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 16px;
+    }
+
+    .modal-backdrop[hidden] { display: none; }
+
+    .modal {
+      width: min(420px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 16px 40px rgba(70, 55, 30, 0.16);
+    }
+
+    .modal h3 {
+      margin: 0 0 14px;
+      font-size: 18px;
+    }
+
+    .modal label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .modal label > * {
+      margin-top: 6px;
+    }
+
+    .modal-check {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 12px 0 16px;
+      color: var(--warn);
+      font-size: 14px;
+    }
+
+    .modal-check input { width: auto; }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn-ghost {
+      background: #efe6d4;
+      color: var(--ink);
+    }
+
+    .btn-ghost:hover { background: #e4d8c2; }
+
+    .chat-log {
+      flex: 1;
+      overflow: auto;
+      background: #f7f3ea;
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 240px;
+    }
+
+    .bubble {
+      max-width: 92%;
+      margin-bottom: 10px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+
+    .bubble.user {
+      margin-left: auto;
+      background: #dceee6;
+    }
+
+    .bubble.bot {
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .chat-form {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    footer {
+      display: flex;
+      gap: 24px;
+      padding: 12px 28px;
+      background: #2b3530;
+      color: #f4efe4;
+      font-size: 14px;
+    }
+
+    footer strong { color: #9dd6c3; }
+
+    @media (max-width: 960px) {
+      main { grid-template-columns: 1fr; }
+      .panel { min-height: auto; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>我的学习助手</h1>
+    <p>把本周目标拆成每天能做完的小事，再让对话框帮你加任务、查进度、勾完成。</p>
+  </header>
+
+  <main>
+    <section class="panel" aria-label="本周学习目标">
+      <h2>本周学习目标</h2>
+      <textarea id="weeklyGoal" placeholder="用句号、分号或换行分开，例如：&#10;把英语单词过一遍。&#10;完成数学练习册第三章；整理错题。"></textarea>
+      <div class="goal-actions">
+        <button id="splitBtn" type="button">拆成每日任务</button>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="本周待办">
+      <h2>本周待办</h2>
+      <div id="dayTabs" class="day-tabs"></div>
+      <ul id="todoList" class="todo-list"></ul>
+    </section>
+
+    <section class="panel" aria-label="指令对话框">
+      <h2>对话框</h2>
+      <div id="chatLog" class="chat-log">
+        <div class="bubble bot">可以输入这些指令：
+今天加一个：复习英语
+列出今天还没做的
+完成 复习英语
+删除 复习英语
+把复习英语换成第3天</div>
+      </div>
+      <form class="chat-form" id="chatForm">
+        <input id="commandInput" type="text" placeholder="输入中文指令" autocomplete="off">
+        <button type="submit">执行</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <div>今天待办总数：<strong id="totalCount">0</strong></div>
+    <div>已完成数：<strong id="doneCount">0</strong></div>
+  </footer>
+
+  <div id="editModal" class="modal-backdrop" hidden>
+    <div class="modal" role="dialog" aria-labelledby="editModalTitle">
+      <h3 id="editModalTitle">编辑任务</h3>
+      <label>标题
+        <input id="editTitle" type="text">
+      </label>
+      <label>所在天
+        <select id="editDay"></select>
+      </label>
+      <label>截止日期
+        <input id="editDue" type="date">
+      </label>
+      <label class="modal-check">
+        <input id="editDelete" type="checkbox">
+        删除此任务
+      </label>
+      <div class="modal-actions">
+        <button id="editCancel" class="btn-ghost" type="button">取消</button>
+        <button id="editConfirm" type="button">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TEMPLATES = [
+      '复习今天的内容 30 分钟',
+      '预习明天要学的章节',
+      '整理错题并回顾一遍'
+    ];
+
+    const weeklyGoal = document.getElementById('weeklyGoal');
+    const splitBtn = document.getElementById('splitBtn');
+    const dayTabs = document.getElementById('dayTabs');
+    const todoList = document.getElementById('todoList');
+    const chatLog = document.getElementById('chatLog');
+    const chatForm = document.getElementById('chatForm');
+    const commandInput = document.getElementById('commandInput');
+    const totalCount = document.getElementById('totalCount');
+    const doneCount = document.getElementById('doneCount');
+    const editModal = document.getElementById('editModal');
+    const editTitle = document.getElementById('editTitle');
+    const editDay = document.getElementById('editDay');
+    const editDue = document.getElementById('editDue');
+    const editDelete = document.getElementById('editDelete');
+    const editCancel = document.getElementById('editCancel');
+    const editConfirm = document.getElementById('editConfirm');
+
+    let selectedDay = 0;
+    let allTasks = [];
+    let editingId = null;
+
+    function todayStr() {
+      const d = new Date();
+      const offset = d.getTimezoneOffset();
+      const local = new Date(d.getTime() - offset * 60000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function datePlusDays(days) {
+      const parts = todayStr().split('-').map(Number);
+      const date = new Date(parts[0], parts[1] - 1, parts[2] + days);
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return y + '-' + m + '-' + d;
+    }
+
+    function splitGoalText(text) {
+      const parts = String(text)
+        .split(/[。；;\n]+/)
+        .map((item) => item.trim())
+        .filter(Boolean);
+      const items = parts.slice();
+      let i = 0;
+      while (items.length < 3 && i < TEMPLATES.length) {
+        items.push(TEMPLATES[i]);
+        i += 1;
+      }
+      return items;
+    }
+
+    function appendBubble(role, text) {
+      const div = document.createElement('div');
+      div.className = 'bubble ' + role;
+      div.textContent = text;
+      chatLog.appendChild(div);
+      chatLog.scrollTop = chatLog.scrollHeight;
+    }
+
+    async function api(url, options) {
+      const res = await fetch(url, options);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.error || data.message || '请求失败');
+      }
+      return data;
+    }
+
+    function fillEditDayOptions(currentDue) {
+      editDay.innerHTML = '';
+      let matched = false;
+      for (let i = 0; i < 7; i += 1) {
+        const due = datePlusDays(i);
+        const option = document.createElement('option');
+        option.value = due;
+        option.textContent = '第' + (i + 1) + '天（' + due + '）';
+        if (due === currentDue) {
+          option.selected = true;
+          matched = true;
+        }
+        editDay.appendChild(option);
+      }
+      if (currentDue && !matched) {
+        const extra = document.createElement('option');
+        extra.value = currentDue;
+        extra.textContent = '其他日期（' + currentDue + '）';
+        extra.selected = true;
+        editDay.appendChild(extra);
+      }
+    }
+
+    function renderDayTabs() {
+      dayTabs.innerHTML = '';
+      for (let i = 0; i < 7; i += 1) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'day-tab' + (i === selectedDay ? ' active' : '');
+        btn.innerHTML = '<span>第' + (i + 1) + '天</span><small>' + datePlusDays(i) + '</small>';
+        btn.addEventListener('click', () => {
+          selectedDay = i;
+          renderTasks(allTasks);
+        });
+        dayTabs.appendChild(btn);
+      }
+    }
+
+    function openEdit(task) {
+      editingId = task.id;
+      editTitle.value = task.title;
+      editDue.value = task.due;
+      editDelete.checked = false;
+      fillEditDayOptions(task.due);
+      editModal.hidden = false;
+      editTitle.focus();
+    }
+
+    function closeEdit() {
+      editingId = null;
+      editModal.hidden = true;
+    }
+
+    function renderTasks(tasks) {
+      allTasks = Array.isArray(tasks) ? tasks : [];
+      renderDayTabs();
+
+      const today = todayStr();
+      const todays = allTasks.filter((task) => task.due === today);
+      const viewDate = datePlusDays(selectedDay);
+      const viewed = allTasks.filter((task) => task.due === viewDate);
+      todoList.innerHTML = '';
+
+      if (viewed.length === 0) {
+        const empty = document.createElement('li');
+        empty.className = 'empty';
+        empty.textContent = '这一天还没有待办。可以在左侧拆目标，或在右侧加一条。';
+        todoList.appendChild(empty);
+      } else {
+        viewed.forEach((task) => {
+          const li = document.createElement('li');
+          li.className = 'todo-item' + (task.done ? ' done' : '');
+
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.checked = !!task.done;
+          checkbox.setAttribute('aria-label', '完成 ' + task.title);
+          checkbox.addEventListener('change', async () => {
+            try {
+              await api('/api/tasks/' + task.id, { method: 'PATCH' });
+              await loadTasks();
+            } catch (err) {
+              alert(err.message);
+              await loadTasks();
+            }
+          });
+
+          const body = document.createElement('div');
+          const title = document.createElement('div');
+          title.className = 'todo-title';
+          title.textContent = task.title;
+          const due = document.createElement('div');
+          due.className = 'todo-due';
+          due.textContent = '截止时间：' + task.due;
+          body.appendChild(title);
+          body.appendChild(due);
+
+          const editBtn = document.createElement('button');
+          editBtn.type = 'button';
+          editBtn.className = 'btn-edit';
+          editBtn.textContent = '编辑';
+          editBtn.addEventListener('click', () => openEdit(task));
+
+          li.appendChild(checkbox);
+          li.appendChild(body);
+          li.appendChild(editBtn);
+          todoList.appendChild(li);
+        });
+      }
+
+      totalCount.textContent = String(todays.length);
+      doneCount.textContent = String(todays.filter((task) => task.done).length);
+    }
+
+    async function loadTasks() {
+      const tasks = await api('/api/tasks');
+      renderTasks(tasks);
+    }
+
+    editDay.addEventListener('change', () => {
+      editDue.value = editDay.value;
+    });
+
+    editDue.addEventListener('change', () => {
+      fillEditDayOptions(editDue.value);
+    });
+
+    editCancel.addEventListener('click', closeEdit);
+    editModal.addEventListener('click', (event) => {
+      if (event.target === editModal) closeEdit();
+    });
+
+    editConfirm.addEventListener('click', async () => {
+      if (editingId == null) return;
+      try {
+        if (editDelete.checked) {
+          await api('/api/tasks/' + editingId, { method: 'DELETE' });
+        } else {
+          const title = editTitle.value.trim();
+          const due = editDue.value;
+          if (!title) {
+            alert('标题不能为空');
+            return;
+          }
+          if (!due) {
+            alert('请选择截止日期');
+            return;
+          }
+          await api('/api/tasks/' + editingId, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title, due })
+          });
+        }
+        closeEdit();
+        await loadTasks();
+      } catch (err) {
+        alert(err.message);
+      }
+    });
+
+    splitBtn.addEventListener('click', async () => {
+      const items = splitGoalText(weeklyGoal.value);
+      splitBtn.disabled = true;
+      try {
+        for (let i = 0; i < items.length; i += 1) {
+          await api('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: items[i], due: datePlusDays(i) })
+          });
+        }
+        await loadTasks();
+        appendBubble('bot', '已按规则拆成 ' + items.length + ' 条待办，日期从今天起按顺序分配。');
+      } catch (err) {
+        alert(err.message);
+      } finally {
+        splitBtn.disabled = false;
+      }
+    });
+
+    chatForm.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const command = commandInput.value.trim();
+      if (!command) return;
+      appendBubble('user', command);
+      commandInput.value = '';
+      try {
+        const result = await api('/api/plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command })
+        });
+        appendBubble('bot', result.message || '已执行');
+        await loadTasks();
+      } catch (err) {
+        appendBubble('bot', err.message);
+      }
+    });
+
+    loadTasks().catch((err) => {
+      todoList.innerHTML = '<li class="empty">' + err.message + '</li>';
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "my-study-planner",
+  "version": "1.0.0",
+  "description": "学习规划网页：Express + 静态 HTML",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}
